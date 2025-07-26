@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ইংরেজী অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "_ his alert and vigilant presence, all predatory animals were said to have been kept within bounds.",
+          options: {
+            a: "Hence",
+            b: "However",
+            c: "in addition to",
+            d: "Because of",
+          },
+          correct: "d",
+          explanation:
+            "<p>এই বাক্যটিতে একটি কারণ এবং তার ফলাফল বোঝানো হচ্ছে। 'his alert and vigilant presence' (তার সতর্ক ও সজাগ উপস্থিতি) হলো কারণ, এবং 'all predatory animals were said to have been kept within bounds' (সব শিকারী প্রাণীকে নিয়ন্ত্রণে রাখা হয়েছিল) হলো ফলাফল।</p> <ul> <li><b>(A) Hence:</b> এর অর্থ 'অতএব' বা 'এই কারণে'। এটি সাধারণত একটি সম্পূর্ণ বাক্যের শুরুতে বসে পূর্ববর্তী বাক্যের ফলাফলের ইঙ্গিত দেয়। যেমন: 'He is sick, hence he cannot come.'</li> <li><b>(B) However:</b> এর অর্থ 'তবে' বা 'যাইহোক'। এটি দুটি বিপরীত ধারণাকে সংযুক্ত করে। যেমন: 'He is rich; however, he is not happy.'</li> <li><b>(C) In addition to:</b> এর অর্থ 'এছাড়াও' বা 'সঙ্গে সঙ্গে'। এটি কোনো কিছুর অতিরিক্ত বিষয় যোগ করার জন্য ব্যবহৃত হয়। যেমন: 'In addition to his salary, he gets a bonus.'</li> <li><b>(D) Because of:</b> এর অর্থ 'কারণে' বা 'জন্য'। এটি একটি prepositionsal phrase যা কোনো কিছুর কারণ নির্দেশ করে। 'Because of his alert and vigilant presence' মানে 'তার সতর্ক ও সজাগ উপস্থিতির কারণে'। এটিই এই বাক্যের জন্য সবচেয়ে উপযুক্ত, কারণ এটি কারণ-ফলাফল সম্পর্কটি স্পষ্টভাবে তুলে ধরে।</li> </ul> <p>সুতরাং, সঠিক উত্তর হলো 'Because of'।</p>",
+        },
+        {
+          id: 2,
+          question:
+            "_ his earlier study, the Professor's new study indicates a general warning trend in global weather.",
+          options: {
+            a: "In contrast of",
+            b: "In contrast to",
+            c: "In contrast by",
+            d: "In contrast as",
+          },
+          correct: "b",
+          explanation:
+            "<p>এই বাক্যটিতে দুটি গবেষণার মধ্যে একটি বৈসাদৃশ্য বা পার্থক্য দেখানো হয়েছে: প্রফেসর-এর পূর্ববর্তী গবেষণা এবং তার নতুন গবেষণা। দুটি জিনিসের মধ্যে বৈসাদৃশ্য বোঝাতে 'in contrast to' ফ্রেজটি ব্যবহৃত হয়।</p> <ul> <li><b>(A) In contrast of:</b> ব্যাকরণগতভাবে এই ফ্রেজটি ভুল। 'In contrast' এর পরে সাধারণত 'to' বা 'with' বসে।</li> <li><b>(B) In contrast to:</b> এর অর্থ 'এর বিপরীতে' বা 'এর তুলনায়'। এটি দুটি ভিন্ন বিষয় বা ধারণার মধ্যে তুলনা করে বৈসাদৃশ্য বোঝাতে ব্যবহৃত হয়। যেমন: 'In contrast to my brother, I am quite tall.' এই বাক্যে, পূর্ববর্তী গবেষণার বিপরীতে নতুন গবেষণার ফলাফল ভিন্ন তা বোঝাতে এটি সঠিক।</li> <li><b>(C) In contrast by:</b> ব্যাকরণগতভাবে এই ফ্রেজটি ভুল।</li> <li><b>(D) In contrast as:</b> ব্যাকরণগতভাবে এই ফ্রেজটি ভুল।</li> </ul> <p>সুতরাং, সঠিক ফ্রেজটি হলো 'In contrast to'।</p>",
+        },
+        {
+          id: 3,
+          question:
+            "Crafty men condemn studies, simple men admire them and wise men use them.",
+          options: {
+            a: "Denounce",
+            b: "Laud",
+            c: "Compliment",
+            d: "Acclaim",
+          },
+          correct: "a",
+          explanation:
+            "<p>প্রদত্ত বাক্যে, 'condemn' শব্দটি ব্যবহৃত হয়েছে যার অর্থ 'নিন্দা করা' বা 'ঘৃণা করা'। আমাদের এমন একটি প্রতিশব্দ খুঁজে বের করতে হবে যার অর্থ 'নিন্দা করা'।</p> <ul> <li><b>(A) Denounce:</b> এর অর্থ হল 'প্রকাশ্যে নিন্দা করা' বা 'তিরস্কার করা'। এটি 'condemn' এর সরাসরি প্রতিশব্দ। চালাক ব্যক্তিরা গবেষণাকে নিন্দা করে কারণ তারা মনে করে গবেষণা তাদের চালাকি উন্মোচন করতে পারে।</li> <li><b>(B) Laud:</b> এর অর্থ হল 'প্রশংসা করা' বা 'গুণকীর্তন করা'। এটি 'condemn' এর বিপরীত অর্থ প্রকাশ করে।</li> <li><b>(C) Compliment:</b> এর অর্থ হল 'প্রশংসা করা' বা 'শুভেচ্ছা জানানো'। এটিও 'condemn' এর বিপরীত অর্থ প্রকাশ করে।</li> <li><b>(D) Acclaim:</b> এর অর্থ হল 'উচ্চ প্রশংসা করা' বা 'সাধুবাদ জানানো'। এটিও 'condemn' এর বিপরীত অর্থ প্রকাশ করে।</li> </ul> <p>সুতরাং, 'condemn' শব্দের সবচেয়ে কাছের অর্থ 'Denounce'।</p>",
+        },
+        {
+          id: "4",
+          question: "What is the synonym of 'Competent'?",
+          options: {
+            a: "Circumspect",
+            b: "Dircumspect",
+            c: "Capable",
+            d: "Prudent",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Competent' শব্দের অর্থ হলো 'দক্ষ', 'যোগ্য' বা 'সক্ষম'। এমন ব্যক্তি যিনি কোনো কাজ সফলভাবে করতে পারেন।</p> <ul> <li><b>(A) Circumspect:</b> এর অর্থ হলো 'সতর্ক' বা 'বিবেচক', যিনি কোনো বিপদ বা ঝুঁকি এড়াতে সতর্ক থাকেন।</li> <li><b>(B) Dircumspect:</b> এটি কোনো সঠিক ইংরেজি শব্দ নয়, সম্ভবত 'Circumspect' এর ভুল বানান।</li> <li><b>(C) Capable:</b> এর অর্থ হলো 'সক্ষম', 'যোগ্য' বা 'দক্ষ'। এটি 'Competent' এর সরাসরি প্রতিশব্দ। যেমন: 'He is capable of doing this job.' (সে এই কাজটি করতে সক্ষম)।</li> <li><b>(D) Prudent:</b> এর অর্থ হলো 'বিচক্ষণ' বা 'দূরদর্শী', যিনি ভবিষ্যৎ ফলাফল সম্পর্কে ভেবে সিদ্ধান্ত নেন।</li> </ul> <p>সুতরাং, 'Competent' এর সবচেয়ে উপযুক্ত প্রতিশব্দ হলো 'Capable'</p>",
+        },
+        {
+          id: 5,
+          question:
+            "Dreams are not meaningless. _ dreams brain produces new ideas.",
+          options: {
+            a: "So that",
+            b: "Such as",
+            c: "Instead",
+            d: "Otherwise",
+          },
+          correct: "c",
+          explanation:
+            "<p>এই বাক্যটিতে দুটি ধারণার মধ্যে বৈপরীত্য বোঝানো হয়েছে। প্রথম অংশে বলা হচ্ছে 'Dreams are not meaningless' (স্বপ্ন অর্থহীন নয়), এবং দ্বিতীয় অংশে বলা হচ্ছে 'dreams brain produces new ideas' (স্বপ্নে মস্তিষ্ক নতুন ধারণা তৈরি করে)। এখানে 'instead' শব্দটি সঠিক কারণ এটি পূর্বের ধারণার পরিবর্তে নতুন একটি ধারণাকে উপস্থাপন করে।</p> <ul> <li><b>(A) So that:</b> এর অর্থ 'যাতে করে' বা 'এই উদ্দেশ্যে'। এটি উদ্দেশ্য বোঝাতে ব্যবহৃত হয়। যেমন: 'He works hard so that he can pass the exam.'</li> <li><b>(B) Such as:</b> এর অর্থ 'যেমন' বা 'উদাহরণস্বরূপ'। এটি উদাহরণ দিতে ব্যবহৃত হয়। যেমন: 'Fruits, such as apples and bananas, are good for health.'</li> <li><b>(C) Instead:</b> এর অর্থ 'পরিবর্তে' বা 'বদলে'। এটি যখন একটি ধারণা বা জিনিসের পরিবর্তে অন্য একটি ধারণা বা জিনিস বোঝানো হয় তখন ব্যবহৃত হয়। এখানে, স্বপ্নের অর্থহীনতা বিষয়ক ধারণার পরিবর্তে নতুন ধারণা তৈরি হওয়ার বিষয়টি উপস্থাপন করা হচ্ছে।</li> <li><b>(D) Otherwise:</b> এর অর্থ 'অন্যথায়'। এটি একটি শর্ত বোঝাতে ব্যবহৃত হয়, অর্থাৎ যদি একটি শর্ত পূরণ না হয় তবে কী ঘটবে। যেমন: 'Study hard, otherwise you will fail.'</li> </ul> <p>সুতরাং, 'Instead' শব্দটিই এই বাক্যের জন্য সবচেয়ে উপযুক্ত, কারণ এটি দুটি ধারণার মধ্যে সম্পর্ককে সঠিকভাবে প্রকাশ করে।</p>",
+        },
+        {
+          id: 6,
+          question:
+            "_ population control measures are expensive; _ many industries hesitate to adapt them.",
+          options: {
+            a: "Although",
+            b: "However",
+            c: "Because",
+            d: "On account of",
+          },
+          correct: "c",
+          explanation:
+            "<p>এই বাক্যে একটি কারণ এবং তার ফলাফল দেখানো হয়েছে। প্রথম অংশ 'population control measures are expensive' (জনসংখ্যা নিয়ন্ত্রণ ব্যবস্থা ব্যয়বহুল) হলো কারণ, এবং দ্বিতীয় অংশ 'many industries hesitate to adapt them' (অনেক শিল্প প্রতিষ্ঠান সেগুলো গ্রহণ করতে দ্বিধা করে) হলো ফলাফল।</p> <ul> <li><b>(A) Although:</b> এর অর্থ 'যদিও'। এটি দুটি বিপরীত ধারণাকে সংযুক্ত করে। যেমন: 'Although it was raining, we went out.'</li> <li><b>(B) However:</b> এর অর্থ 'তবে' বা 'যাইহোক'। এটিও দুটি বিপরীত ধারণাকে সংযুক্ত করে, কিন্তু সাধারণত একটি নতুন বাক্য বা ক্লজের শুরুতে বসে। যেমন: 'He is rich; however, he is not happy.'</li> <li><b>(C) Because:</b> এর অর্থ 'কারণ'। এটি একটি সংযোগকারী শব্দ যা একটি কারণ বা যুক্তিকে বোঝাতে ব্যবহৃত হয়। 'Because population control measures are expensive' মানে 'কারণ জনসংখ্যা নিয়ন্ত্রণ ব্যবস্থা ব্যয়বহুল'। এটিই এই বাক্যের জন্য সবচেয়ে উপযুক্ত, কারণ এটি কারণ-ফলাফল সম্পর্কটি স্পষ্টভাবে তুলে ধরে।</li> <li><b>(D) On account of:</b> এর অর্থ 'কারণে' বা 'জন্য'। এটি একটি prepositionsal phrase এবং এর পরে একটি noun বা pronoun বসে। যেমন: 'On account of his illness, he could not come.' এই বাক্যে, 'Because' এর পরে একটি সম্পূর্ণ ক্লজ বসবে, যা এই বাক্যের কাঠামোর জন্য প্রয়োজন।</li> </ul> <p>সুতরাং, সঠিক উত্তর হলো 'Because' কারণ এটি প্রথম অংশের কারণ দেখিয়ে দ্বিতীয় অংশের ফলাফলকে যুক্ত করছে।</p>",
+        },
+        {
+          id: 7,
+          question: "He left the room _ he could check his laughter.",
+          options: {
+            a: "because",
+            b: "in order that",
+            c: "so as",
+            d: "in order to",
+          },
+          correct: "b",
+          explanation:
+            "<p>এই বাক্যটিতে একটি উদ্দেশ্য বোঝানো হচ্ছে: সে কেন ঘর ছেড়েছিল তার কারণ। 'he could check his laughter' (সে তার হাসি থামাতে পারতো) ছিল তার ঘর ছাড়ার উদ্দেশ্য।</p> <ul> <li><b>(A) Because:</b> এর অর্থ 'কারণ'। এটি একটি কারণ বা যুক্তিকে বোঝাতে ব্যবহৃত হয়। যেমন: 'He is happy because he passed the exam.' এখানে উদ্দেশ্য নয়, কারণ বোঝায়।</li> <li><b>(B) In order that:</b> এর অর্থ 'যাতে করে' বা 'এই উদ্দেশ্যে'। এটি একটি উদ্দেশ্য বা লক্ষ্য বোঝাতে ব্যবহৃত হয় এবং এর পরে একটি Subject + Modal Verb (can, could, may, might) + Verb আসে। 'He left the room in order that he could check his laughter' মানে 'সে ঘর ছেড়েছিল যাতে সে তার হাসি থামাতে পারে'। এটি বাক্যের উদ্দেশ্যকে সঠিকভাবে প্রকাশ করে।</li> <li><b>(C) So as:</b> এই ফ্রেজটি সাধারণত 'so as to' আকারে ব্যবহৃত হয় এবং এর পরে একটি infinitive verb বসে। যেমন: 'He works hard so as to pass the exam.' এখানে 'so as he could check' ব্যাকরণগতভাবে সঠিক নয়।</li> <li><b>(D) In order to:</b> এর অর্থ 'জন্য' বা 'উদ্দেশ্যে'। এটিও একটি উদ্দেশ্য বোঝাতে ব্যবহৃত হয়, কিন্তু এর পরে একটি infinitive verb বসে। যেমন: 'He left the room in order to check his laughter.' যদি বাক্যটি 'He left the room in order to check his laughter' হতো, তাহলে এটি সঠিক হতো। কিন্তু এখানে 'he could check' থাকায় 'in order that' প্রয়োজন।</li> </ul> <p>সুতরাং, 'in order that' এই বাক্যের গঠন এবং অর্থের সাথে সামঞ্জস্যপূর্ণ।</p>",
+        },
+        {
+          id: 8,
+          question: "Show your ticket; _ you will not be allowed to enter.",
+          options: {
+            a: "if",
+            b: "whom",
+            c: "otherwise",
+            d: "lest",
+          },
+          correct: "c",
+          explanation:
+            "<p>এই বাক্যটিতে একটি শর্ত এবং তার পরিণতি বোঝানো হচ্ছে। প্রথম অংশে একটি নির্দেশ দেওয়া হয়েছে ('Show your ticket'), এবং দ্বিতীয় অংশে বলা হয়েছে যদি নির্দেশটি পালন না করা হয় তবে কী ঘটবে ('you will not be allowed to enter')।</p> <ul> <li><b>(A) If:</b> এর অর্থ 'যদি'। এটি একটি শর্ত বোঝাতে ব্যবহৃত হয়, কিন্তু সাধারণত একটি সম্পূর্ণ ক্লজের আগে বসে। যেমন: 'If you show your ticket, you will be allowed to enter.' এখানে বাক্য দুটির মধ্যে সম্পর্ক বোঝাতে 'if' সরাসরি উপযুক্ত নয়।</li> <li><b>(B) Whom:</b> এটি একটি সম্পর্কসূচক সর্বনাম (relative pronoun) যা বস্তুর পরিবর্তে ব্যক্তিকে বোঝাতে ব্যবহৃত হয় এবং বাক্যের কর্মপদ হিসেবে কাজ করে। এই বাক্যে এর কোনো প্রয়োগ নেই।</li> <li><b>(C) Otherwise:</b> এর অর্থ 'অন্যথায়' বা 'নতুবা'। এটি একটি সংযোগকারী ক্রিয়াবিশেষণ যা বোঝায় যে যদি একটি নির্দিষ্ট শর্ত পূরণ না হয়, তবে ভিন্ন একটি পরিণতি ঘটবে। 'Show your ticket; otherwise you will not be allowed to enter' মানে 'আপনার টিকিট দেখান; অন্যথায় আপনাকে প্রবেশ করতে দেওয়া হবে না'। এটিই এই বাক্যের জন্য সবচেয়ে উপযুক্ত।</li> <li><b>(D) Lest:</b> এর অর্থ 'পাছে' বা 'এই ভয়ে যে'। এটি নেতিবাচক উদ্দেশ্য বোঝাতে ব্যবহৃত হয়। যেমন: 'He ran fast lest he should miss the train.' এই বাক্যের প্রেক্ষাপটে এটি সঠিক নয়।</li> </ul> <p>সুতরাং, 'otherwise' এই বাক্যের শর্তাধীন পরিণতি বোঝাতে সবচেয়ে উপযুক্ত।</p>",
+        },
+        {
+          id: 9,
+          question: "I will stay with you _ there is a room free.",
+          options: {
+            a: "as much as",
+            b: "as many as",
+            c: "as long as",
+            d: "as important as",
+          },
+          correct: "c",
+          explanation:
+            "<p>এই বাক্যটিতে একটি শর্ত বা সময়কাল বোঝানো হচ্ছে - কতক্ষণ সে থাকবে। তার থাকার সময়কাল নির্ভর করছে রুম খালি থাকার ওপর।</p> <ul> <li><b>(A) As much as:</b> এর অর্থ 'যতটা' বা 'ঠিক ততটাই'। এটি পরিমাণ বা মাত্রা বোঝাতে ব্যবহৃত হয়। যেমন: 'I love you as much as I love my family.'</li> <li><b>(B) As many as:</b> এর অর্থ 'যতগুলো'। এটি সংখ্যা বোঝাতে ব্যবহৃত হয়। যেমন: 'As many as five hundred people attended the meeting.'</li> <li><b>(C) As long as:</b> এর অর্থ 'যতক্ষণ পর্যন্ত' বা 'যদি'। এটি সময়কাল বা একটি শর্ত বোঝাতে ব্যবহৃত হয়। 'I will stay with you as long as there is a room free' মানে 'যতক্ষণ রুম খালি থাকবে, ততক্ষণ আমি তোমার সাথে থাকব'। এটি বাক্যের সময়কাল এবং শর্ত উভয়ই সঠিকভাবে প্রকাশ করে।</li> <li><b>(D) As important as:</b> এর অর্থ 'যতটা গুরুত্বপূর্ণ'। এটি দুটি জিনিসের গুরুত্ব তুলনা করতে ব্যবহৃত হয়। যেমন: 'This is as important as that.'</li> </ul> <p>সুতরাং, 'as long as' এই বাক্যের জন্য সবচেয়ে উপযুক্ত, কারণ এটি তার থাকার সময়কালের শর্তকে সঠিকভাবে প্রকাশ করে।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                                          <label class="option" data-option="${option}">
+                                                                            <div class="circle">${option}</div>
+                                                                            <span class="option-text">${question.options[option]}</span>
+                                                                          </label>
+                                                                        `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                             <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                             <div class="explanation-content">
+                                                                               <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                               ${question.explanation}
+                                                                             </div>
+                                                                           </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                        <p class="question-label">${
+                                                                          index +
+                                                                          1
+                                                                        }. ${
+            question.question
+          }</p>
+                                                                        <div class="options">
+                                                                          ${optionsHTML}
+                                                                        </div>
+                                                                        ${explanationHTML}
+                                                                      `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
